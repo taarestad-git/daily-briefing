@@ -419,23 +419,37 @@ async function callClaude(systemPrompt, userPrompt) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
+      max_tokens: 2000,
       system: systemPrompt,
       tools: [{ type: "web_search_20250305", name: "web_search" }],
       messages: [{ role: 'user', content: userPrompt }]
     })
   });
   const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
   const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
-  const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  return JSON.parse(clean);
+  // Extract JSON object even if surrounded by text
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('No JSON found in response: ' + text.substring(0, 200));
+  try {
+    return JSON.parse(jsonMatch[0]);
+  } catch(e) {
+    // Try cleaning common issues
+    const cleaned = jsonMatch[0]
+      .replace(/,\s*}/g, '}')
+      .replace(/,\s*]/g, ']');
+    return JSON.parse(cleaned);
+  }
 }
 
 const SYS = `You are a financial and news research assistant. Today is ${DATESTR}. 
 Use web search to find current, accurate data. 
-Respond ONLY with valid JSON — no markdown fences, no preamble, no explanation.
-All numbers should be strings formatted for display (e.g. "4.28%", "$4,892", "+2.3%").
-Use "N/A" where data is unavailable. Be concise but informative.`;
+CRITICAL INSTRUCTION: Your entire response must be ONLY a raw JSON object.
+Start your response with the { character. End with the } character.
+Zero text before the opening brace. Zero text after the closing brace.
+No markdown fences. No preamble. No explanation. No "Here is" or "Now let me".
+All numbers as display strings (e.g. "4.28%", "$4,892", "+2.3%").
+Use "N/A" where data is unavailable. Keep all string values concise.`;
 
 async function fetchHeadlines() {
   return callClaude(SYS, `Search for today's top 6 major national and global news headlines (${DATESTR}), 
