@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Daily Briefing</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Daily Briefing">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0e0c">
+<!-- Inline SVG as apple-touch-icon via data URI -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230f0e0c'/%3E%3Crect x='0' y='0' width='180' height='8' fill='%23b5430a'/%3E%3Ctext x='90' y='80' font-family='Georgia,serif' font-size='52' font-weight='900' fill='%23f5f1e8' text-anchor='middle'%3EDB%3C/text%3E%3Ctext x='90' y='115' font-family='Georgia,serif' font-size='14' fill='%23a89f8c' text-anchor='middle'%3EDAILY BRIEFING%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e0c;
+    --paper: #f5f1e8;
+    --accent: #b5430a;
+    --steel: #2a3a4a;
+    --muted: #6b6456;
+    --rule: #d4c9b2;
+    --green: #2d6a4f;
+    --red: #b5430a;
+    --gold: #c8981a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom);
+    -webkit-text-size-adjust: 100%;
+  }
+  /* MASTHEAD */
+  .masthead {
+    background: var(--ink);
+    color: var(--paper);
+    text-align: center;
+    padding: 28px 20px 20px;
+    border-bottom: 4px solid var(--accent);
+  }
+  .masthead h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .masthead .dateline {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: #a89f8c;
+    margin-top: 6px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .masthead .tagline {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: #c8b99a;
+    margin-top: 4px;
+  }
+
+  /* LAYOUT */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+  .grid-main { display: grid; grid-template-columns: 1fr; gap: 0; }
+
+  /* SECTION */
+  .section {
+    border-bottom: 1px solid var(--rule);
+    padding: 24px 0;
+  }
+  .section:last-child { border-bottom: none; }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .section-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  /* LOADING STATE */
+  .loading-wrapper {
+    text-align: center;
+    padding: 80px 20px;
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--rule);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+  .progress-items {
+    margin-top: 16px;
+    list-style: none;
+    display: inline-block;
+    text-align: left;
+  }
+  .progress-items li {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding: 3px 0;
+    opacity: 0.5;
+    transition: opacity 0.3s, color 0.3s;
+  }
+  .progress-items li.active { opacity: 1; color: var(--accent); }
+  .progress-items li.done { opacity: 1; color: var(--green); }
+
+  /* CONTENT STYLES */
+  .headline-item {
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .headline-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .headline-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 2px;
+  }
+  .headline-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+  .headline-body { color: var(--muted); font-size: 0.88rem; }
+
+  /* TABLES */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    margin-bottom: 16px;
+  }
+  .data-table th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 6px 10px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .data-table th:not(:first-child) { text-align: right; }
+  .data-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  .data-table td:not(:first-child) { text-align: right; }
+  .data-table tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+  .data-table .row-label { font-weight: 500; color: var(--steel); }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+  .neutral { color: var(--muted); }
+
+  /* PILLS */
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+  }
+  .pill-up { background: #d4edda; color: var(--green); }
+  .pill-down { background: #fde8e0; color: var(--red); }
+  .pill-neutral { background: #e8e4dc; color: var(--muted); }
+
+  /* TWO-COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* iPad banner */
+  .ios-banner {
+    background: var(--accent);
+    color: white;
+    text-align: center;
+    padding: 10px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    display: none;
+  }
+  .ios-banner.visible { display: block; }
+  .ios-banner strong { font-weight: 600; }
+
+  /* SUB-SECTION */
+  .sub-section { margin-bottom: 20px; }
+  .sub-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* PROSE */
+  .prose { color: var(--muted); font-size: 0.88rem; line-height: 1.65; }
+  .prose p { margin-bottom: 8px; }
+  .prose strong { color: var(--ink); }
+
+  /* QUICK HITTERS */
+  .quick-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .quick-card {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 16px;
+    border-radius: 2px;
+  }
+  .quick-card .qc-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    color: #a89f8c;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .quick-card .qc-content { font-size: 0.85rem; line-height: 1.5; }
+
+  /* SCORE BADGES */
+  .scores-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .score-card {
+    background: white;
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    min-width: 180px;
+    flex: 1;
+  }
+  .score-team { font-weight: 500; font-size: 0.85rem; }
+  .score-result { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; color: var(--muted); }
+
+  /* UPCOMING */
+  .upcoming-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px dotted var(--rule);
+    font-size: 0.85rem;
+  }
+  .upcoming-item:last-child { border-bottom: none; }
+  .upcoming-date {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    white-space: nowrap;
+    margin-left: 12px;
+  }
+
+  /* FED BOX */
+  .fed-box {
+    background: var(--steel);
+    color: var(--paper);
+    padding: 14px 16px;
+    margin-top: 12px;
+    border-radius: 2px;
+  }
+  .fed-box .fed-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    color: #a89f8c;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .fed-box .fed-content { font-size: 0.88rem; line-height: 1.5; }
+
+  /* ERROR */
+  .error-box {
+    background: #fde8e0;
+    border-left: 3px solid var(--red);
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    color: var(--red);
+    margin: 8px 0;
+  }
+
+  /* REFRESH BTN */
+  .refresh-bar {
+    background: var(--ink);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .refresh-bar .ts {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: #a89f8c;
+    letter-spacing: 0.08em;
+  }
+  .refresh-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .refresh-btn:hover { background: #8f3008; }
+  .section-content { position: relative; }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <h1>The Daily Briefing</h1>
+  <div class="tagline">Minnesota Edition &mdash; Markets, Real Estate &amp; Beyond</div>
+  <div class="dateline" id="dateline">Loading...</div>
+</div>
+
+<div class="ios-banner" id="iosBanner">
+  Tip: Tap <strong>Share ↑</strong> then <strong>"Add to Home Screen"</strong> to save this as an app on your iPad
+  &nbsp;&nbsp;<span onclick="document.getElementById('iosBanner').style.display='none'" style="cursor:pointer;opacity:0.7">✕</span>
+</div>
+
+<div class="refresh-bar">
+  <span class="ts" id="lastUpdated">Not yet loaded</span>
+  <button class="refresh-btn" onclick="runBriefing()">&#8635; Refresh Briefing</button>
+</div>
+
+<div class="container">
+  <div id="loadingState" class="loading-wrapper">
+    <div class="spinner"></div>
+    <div class="loading-text">Compiling your briefing&hellip;</div>
+    <ul class="progress-items" id="progressList">
+      <li id="prog-headlines">&#9633; Top Headlines</li>
+      <li id="prog-markets">&#9633; Markets &amp; Economy</li>
+      <li id="prog-realestate">&#9633; Real Estate &amp; Homebuilders</li>
+      <li id="prog-mn">&#9633; Minnesota</li>
+      <li id="prog-tech">&#9633; Business / AI / Tech</li>
+      <li id="prog-quickhit">&#9633; Quick Hitters</li>
+    </ul>
+  </div>
+  <div id="briefingContent" style="display:none;"></div>
+</div>
+
+<script>
+const TODAY = new Date();
+const DATESTR = TODAY.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+document.getElementById('dateline').textContent = DATESTR.toUpperCase();
+
+// Show "Add to Home Screen" tip on iOS Safari (not when already running as PWA)
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone === true;
+if (isIOS && !isStandalone) {
+  document.getElementById('iosBanner').classList.add('visible');
+}
+
+function setProgress(id, state) {
+  const el = document.getElementById('prog-' + id);
+  if (!el) return;
+  if (state === 'active') { el.className = 'active'; el.textContent = '▶ ' + el.textContent.replace(/^[▶✓] /, ''); }
+  else if (state === 'done') { el.className = 'done'; el.textContent = '✓ ' + el.textContent.replace(/^[▶✓] /, ''); }
+}
+
+function val(v, pos, neg) {
+  if (!v || v === 'N/A') return `<span class="neutral">${v || 'N/A'}</span>`;
+  const isUp = String(v).startsWith('+') || (!String(v).startsWith('-') && !String(v).startsWith('0'));
+  return `<span class="${isUp ? 'up' : 'down'}">${v}</span>`;
+}
+
+function pill(v) {
+  if (!v || v === 'N/A') return `<span class="pill pill-neutral">${v || 'N/A'}</span>`;
+  const isUp = String(v).startsWith('+');
+  const isDown = String(v).startsWith('-');
+  const cls = isUp ? 'pill-up' : isDown ? 'pill-down' : 'pill-neutral';
+  return `<span class="pill ${cls}">${v}</span>`;
+}
+
+async function callClaude(systemPrompt, userPrompt) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: systemPrompt,
+      tools: [{ type: "web_search_20250305", name: "web_search" }],
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+  const data = await resp.json();
+  const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+  const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  return JSON.parse(clean);
+}
+
+const SYS = `You are a financial and news research assistant. Today is ${DATESTR}. 
+Use web search to find current, accurate data. 
+Respond ONLY with valid JSON — no markdown fences, no preamble, no explanation.
+All numbers should be strings formatted for display (e.g. "4.28%", "$4,892", "+2.3%").
+Use "N/A" where data is unavailable. Be concise but informative.`;
+
+async function fetchHeadlines() {
+  return callClaude(SYS, `Search for today's top 6 major national and global news headlines (${DATESTR}), 
+  prioritizing stories that could impact markets, real estate, or policy.
+  Return JSON: { "headlines": [ { "category": "NATIONAL|GLOBAL|MARKETS|POLICY|ECONOMY", "title": "...", "summary": "2-3 sentences conversational" }, ... ] }`);
+}
+
+async function fetchMarkets() {
+  return callClaude(SYS, `Search for current financial data as of today ${DATESTR}. Find:
+  1. Rates: 10-year Treasury yield, SOFR rate, Prime Rate, 30-year fixed mortgage rate, Fidelity SPAXX money market yield
+  2. For each rate also find approximate values 1 week ago, 30 days ago, 6 months ago, 1 year ago
+  3. Stock market: S&P 500 (level, today change %, YTD change %), Nasdaq Composite (level, today %, YTD %), Dow Jones (level, today %, YTD %)
+  4. For each index: note 1-2 key companies or sectors driving recent movement
+  5. Key economic data releases: latest CPI reading, latest jobs/unemployment data, any recent Fed statements
+  6. Next Fed meeting date and what futures markets expect for rate changes
+  Return JSON:
+  {
+    "rates": [
+      { "name": "...", "today": "...", "w1": "...", "d30": "...", "m6": "...", "y1": "..." }
+    ],
+    "indices": [
+      { "name": "...", "level": "...", "todayChg": "...", "ytd": "...", "drivers": "..." }
+    ],
+    "econData": [
+      { "indicator": "...", "value": "...", "date": "...", "note": "..." }
+    ],
+    "upcomingReleases": [
+      { "name": "...", "date": "...", "consensus": "..." }
+    ],
+    "fedMeeting": { "nextDate": "...", "expectation": "..." }
+  }`);
+}
+
+async function fetchRealEstate() {
+  return callClaude(SYS, `Search for current data as of ${DATESTR}:
+  1. Housing starts and building permits (latest government data)
+  2. NAHB homebuilder sentiment index
+  3. Minnesota/Twin Cities specific: new apartment projects announced, land transactions, zoning changes if any
+  4. The 5 largest public homebuilders: D.R. Horton (DHI), Lennar (LEN), PulteGroup (PHM), NVR Inc (NVR), Toll Brothers (TOL)
+     For each: current share price, dividend yield, today's $ and % change, YTD % change
+  5. Any key news about these builders or the housing market
+  Return JSON:
+  {
+    "housingData": [ { "indicator": "...", "value": "...", "note": "..." } ],
+    "mnDevelopment": [ { "type": "APARTMENT|LAND|ZONING|OTHER", "description": "...", "developer": "...", "location": "..." } ],
+    "builders": [
+      { "ticker": "...", "name": "...", "price": "...", "yield": "...", "todayChg": "...", "ytd": "...", "note": "..." }
+    ],
+    "marketNote": "2-3 sentence summary of housing market conditions"
+  }`);
+}
+
+async function fetchMN() {
+  return callClaude(SYS, `Search for current Minnesota news and economic data as of ${DATESTR}.
+  1. Top 3-4 Minnesota / Twin Cities news stories
+  2. Minnesota economic indicators - find current values and compare to roughly 90, 180, 365 days ago:
+     - MN unemployment rate, Twin Cities median home price, MN housing permits, MN consumer confidence if available
+  Return JSON:
+  {
+    "localNews": [ { "title": "...", "summary": "1-2 sentences", "category": "POLITICS|DEVELOPMENT|ECONOMY|OTHER" } ],
+    "mnIndicators": [
+      { "name": "...", "current": "...", "d90": "...", "d180": "...", "d365": "..." }
+    ]
+  }`);
+}
+
+async function fetchTech() {
+  return callClaude(SYS, `Search for today's top 4-5 business, AI, and technology news stories as of ${DATESTR}.
+  Focus on: major company moves, AI tool releases, anything affecting productivity/construction/finance.
+  Return JSON: { "stories": [ { "category": "AI|TECH|BUSINESS|FINANCE", "title": "...", "summary": "2-3 sentences conversational" } ] }`);
+}
+
+async function fetchQuickHitters() {
+  return callClaude(SYS, `Search for current data as of ${DATESTR}:
+  1. Minnesota weather: current conditions Twin Cities, high/low today
+  2. Sports scores for recent games (last 48 hours): Minnesota Vikings (NFL), Minnesota Timberwolves (NBA), Minnesota Wild (NHL), Minnesota Twins (MLB), Minnesota Gophers football
+     Also any key Vikings news/transactions
+  3. Commodities: WTI crude oil price/barrel, average Minnesota gas price/gallon, lumber futures (random length), copper price/lb, aluminum price/lb, steel (HRC) price/ton
+  Return JSON:
+  {
+    "weather": { "conditions": "...", "high": "...", "low": "...", "outlook": "..." },
+    "sports": [
+      { "team": "...", "opponent": "...", "score": "...", "result": "W|L|upcoming", "date": "..." }
+    ],
+    "vikingsNews": "Key Vikings news in 1-2 sentences if any",
+    "commodities": [
+      { "name": "...", "price": "...", "unit": "...", "chg": "..." }
+    ]
+  }`);
+}
+
+function buildHTML(data) {
+  const { headlines, markets, realestate, mn, tech, quickhitters } = data;
+
+  // RATES TABLE
+  const ratesRows = (markets.rates || []).map(r => `
+    <tr>
+      <td class="row-label">${r.name}</td>
+      <td>${r.today}</td>
+      <td>${r.w1}</td>
+      <td>${r.d30}</td>
+      <td>${r.m6}</td>
+      <td>${r.y1}</td>
+    </tr>`).join('');
+
+  // INDICES
+  const indicesRows = (markets.indices || []).map(i => `
+    <tr>
+      <td class="row-label">${i.name}</td>
+      <td>${i.level}</td>
+      <td>${i.todayChg?.startsWith('+') ? `<span class="up">${i.todayChg}</span>` : `<span class="down">${i.todayChg}</span>`}</td>
+      <td>${i.ytd?.startsWith('+') ? `<span class="up">${i.ytd}</span>` : `<span class="down">${i.ytd}</span>`}</td>
+      <td class="neutral" style="font-size:0.72rem">${i.drivers}</td>
+    </tr>`).join('');
+
+  // BUILDERS
+  const builderRows = (realestate.builders || []).map(b => `
+    <tr>
+      <td class="row-label">${b.ticker}<br><span style="font-weight:300;font-size:0.7rem;color:var(--muted)">${b.name}</span></td>
+      <td>${b.price}</td>
+      <td>${b.yield}</td>
+      <td>${b.todayChg?.startsWith('+') ? `<span class="up">${b.todayChg}</span>` : `<span class="down">${b.todayChg}</span>`}</td>
+      <td>${b.ytd?.startsWith('+') ? `<span class="up">${b.ytd}</span>` : `<span class="down">${b.ytd}</span>`}</td>
+    </tr>`).join('');
+
+  // MN INDICATORS
+  const mnIndRows = (mn.mnIndicators || []).map(i => `
+    <tr>
+      <td class="row-label">${i.name}</td>
+      <td><strong>${i.current}</strong></td>
+      <td>${i.d90}</td>
+      <td>${i.d180}</td>
+      <td>${i.d365}</td>
+    </tr>`).join('');
+
+  // COMMODITIES
+  const commRows = (quickhitters.commodities || []).map(c => `
+    <tr>
+      <td class="row-label">${c.name}</td>
+      <td>${c.price} <span style="font-size:0.68rem;color:var(--muted)">/${c.unit}</span></td>
+      <td>${c.chg?.startsWith('+') ? `<span class="up">${c.chg}</span>` : `<span class="down">${c.chg}</span>`}</td>
+    </tr>`).join('');
+
+  // SPORTS
+  const sportsCards = (quickhitters.sports || []).map(s => `
+    <div class="score-card">
+      <div class="score-team">MN ${s.team}</div>
+      <div class="score-result">${s.result === 'upcoming' ? `vs ${s.opponent} — ${s.date}` : `${s.score} — ${s.result} vs ${s.opponent}`}</div>
+    </div>`).join('');
+
+  // UPCOMING RELEASES
+  const upcomingHTML = (markets.upcomingReleases || []).map(u => `
+    <div class="upcoming-item">
+      <span>${u.name}${u.consensus ? ` <span class="neutral" style="font-size:0.75rem">(est. ${u.consensus})</span>` : ''}</span>
+      <span class="upcoming-date">${u.date}</span>
+    </div>`).join('');
+
+  // MN DEVELOPMENT
+  const mnDevHTML = (realestate.mnDevelopment || []).map(d => `
+    <div class="headline-item">
+      <div class="headline-label">${d.type}${d.location ? ` · ${d.location}` : ''}</div>
+      <div class="headline-text" style="font-size:0.92rem">${d.description}</div>
+      ${d.developer ? `<div class="headline-body">Developer/Builder: ${d.developer}</div>` : ''}
+    </div>`).join('') || '<div class="prose"><p>No major MN development news today.</p></div>';
+
+  return `
+  <!-- SECTION 1: HEADLINES -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">Top Headlines</span>
+    </div>
+    <div class="section-content">
+      ${(headlines.headlines || []).map(h => `
+        <div class="headline-item">
+          <div class="headline-label">${h.category}</div>
+          <div class="headline-text">${h.title}</div>
+          <div class="headline-body">${h.summary}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- SECTION 2: MARKETS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">Markets &amp; Economy</span>
+    </div>
+    <div class="section-content">
+      <div class="sub-section">
+        <div class="sub-title">Key Rates</div>
+        <table class="data-table">
+          <thead><tr><th>Instrument</th><th>Today</th><th>1 Wk Ago</th><th>30d Ago</th><th>6 Mo Ago</th><th>1 Yr Ago</th></tr></thead>
+          <tbody>${ratesRows}</tbody>
+        </table>
+      </div>
+      <div class="sub-section">
+        <div class="sub-title">Stock Market Indices</div>
+        <table class="data-table">
+          <thead><tr><th>Index</th><th>Level</th><th>Today</th><th>YTD</th><th>Key Drivers</th></tr></thead>
+          <tbody>${indicesRows}</tbody>
+        </table>
+      </div>
+      <div class="sub-section">
+        <div class="sub-title">Economic Data</div>
+        ${(markets.econData || []).map(e => `
+          <div class="upcoming-item">
+            <span><strong>${e.indicator}</strong>: ${e.value} <span class="neutral" style="font-size:0.75rem">(${e.date})</span></span>
+            <span class="neutral" style="font-size:0.78rem">${e.note}</span>
+          </div>`).join('')}
+        <div class="sub-title" style="margin-top:14px">Upcoming Releases</div>
+        ${upcomingHTML}
+        <div class="fed-box">
+          <div class="fed-label">Next Fed Meeting</div>
+          <div class="fed-content"><strong>${markets.fedMeeting?.nextDate || 'N/A'}</strong> — ${markets.fedMeeting?.expectation || 'N/A'}</div>
+        </div>
+      </div>
+      <div class="sub-section">
+        <div class="sub-title">Commodities</div>
+        <table class="data-table">
+          <thead><tr><th>Commodity</th><th>Price</th><th>Change</th></tr></thead>
+          <tbody>${commRows}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: REAL ESTATE -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">Real Estate &amp; Development</span>
+    </div>
+    <div class="section-content">
+      <div class="sub-section">
+        <div class="sub-title">Housing Signals</div>
+        ${(realestate.housingData || []).map(h => `
+          <div class="upcoming-item">
+            <span><strong>${h.indicator}</strong>: ${h.value}</span>
+            <span class="neutral" style="font-size:0.78rem">${h.note}</span>
+          </div>`).join('')}
+        <div class="prose" style="margin-top:10px"><p>${realestate.marketNote || ''}</p></div>
+      </div>
+      <div class="sub-section">
+        <div class="sub-title">Public Homebuilders</div>
+        <table class="data-table">
+          <thead><tr><th>Company</th><th>Price</th><th>Yield</th><th>Today</th><th>YTD</th></tr></thead>
+          <tbody>${builderRows}</tbody>
+        </table>
+      </div>
+      <div class="sub-section">
+        <div class="sub-title">MN / Twin Cities Development</div>
+        ${mnDevHTML}
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: MINNESOTA -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title">Local — Minnesota / Twin Cities</span>
+    </div>
+    <div class="section-content">
+      <div class="sub-section">
+        <div class="sub-title">Top Local News</div>
+        ${(mn.localNews || []).map(n => `
+          <div class="headline-item">
+            <div class="headline-label">${n.category}</div>
+            <div class="headline-text" style="font-size:0.92rem">${n.title}</div>
+            <div class="headline-body">${n.summary}</div>
+          </div>`).join('')}
+      </div>
+      <div class="sub-section">
+        <div class="sub-title">Minnesota Economic Indicators</div>
+        <table class="data-table">
+          <thead><tr><th>Indicator</th><th>Current</th><th>90d Ago</th><th>180d Ago</th><th>365d Ago</th></tr></thead>
+          <tbody>${mnIndRows}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: TECH / AI / BUSINESS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <span class="section-title">Business / AI / Tech</span>
+    </div>
+    <div class="section-content">
+      ${(tech.stories || []).map(s => `
+        <div class="headline-item">
+          <div class="headline-label">${s.category}</div>
+          <div class="headline-text" style="font-size:0.92rem">${s.title}</div>
+          <div class="headline-body">${s.summary}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- SECTION 6: QUICK HITTERS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <span class="section-title">Quick Hitters</span>
+    </div>
+    <div class="section-content">
+      <div class="sub-section">
+        <div class="sub-title">Twin Cities Weather</div>
+        <div class="prose">
+          <p>${quickhitters.weather?.conditions || 'N/A'} · High ${quickhitters.weather?.high || 'N/A'} / Low ${quickhitters.weather?.low || 'N/A'}</p>
+          <p>${quickhitters.weather?.outlook || ''}</p>
+        </div>
+      </div>
+      <div class="sub-section">
+        <div class="sub-title">Minnesota Sports</div>
+        ${quickhitters.vikingsNews ? `<div class="prose" style="margin-bottom:10px"><p><strong>Vikings:</strong> ${quickhitters.vikingsNews}</p></div>` : ''}
+        <div class="scores-grid">${sportsCards || '<div class="prose"><p>No recent game results.</p></div>'}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function runBriefing() {
+  document.getElementById('loadingState').style.display = 'block';
+  document.getElementById('briefingContent').style.display = 'none';
+  document.getElementById('briefingContent').innerHTML = '';
+
+  // Reset progress
+  ['headlines','markets','realestate','mn','tech','quickhit'].forEach(id => {
+    const el = document.getElementById('prog-' + id);
+    if (el) { el.className = ''; el.textContent = '☐ ' + el.textContent.replace(/^[▶✓☐] /, ''); }
+  });
+
+  const results = {};
+  const tasks = [
+    { key: 'headlines', prog: 'headlines', fn: fetchHeadlines },
+    { key: 'markets',   prog: 'markets',   fn: fetchMarkets },
+    { key: 'realestate',prog: 'realestate',fn: fetchRealEstate },
+    { key: 'mn',        prog: 'mn',        fn: fetchMN },
+    { key: 'tech',      prog: 'tech',      fn: fetchTech },
+    { key: 'quickhitters', prog: 'quickhit', fn: fetchQuickHitters },
+  ];
+
+  for (const task of tasks) {
+    setProgress(task.prog, 'active');
+    try {
+      results[task.key] = await task.fn();
+    } catch(e) {
+      console.error(task.key, e);
+      results[task.key] = {};
+    }
+    setProgress(task.prog, 'done');
+  }
+
+  document.getElementById('loadingState').style.display = 'none';
+  const content = document.getElementById('briefingContent');
+  content.innerHTML = buildHTML(results);
+  content.style.display = 'block';
+  document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+// Auto-run on load
+runBriefing();
+</script>
+</body>
+</html>
