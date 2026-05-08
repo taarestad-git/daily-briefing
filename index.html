@@ -484,22 +484,22 @@ async function fetchMarkets() {
 }
 
 async function fetchRealEstate() {
-  return callClaude(SYS, `Search for current data as of ${DATESTR}:
-  1. Housing starts and building permits (latest government data)
-  2. NAHB homebuilder sentiment index
-  3. Minnesota/Twin Cities specific: new apartment projects announced, land transactions, zoning changes if any
-  4. The 5 largest public homebuilders: D.R. Horton (DHI), Lennar (LEN), PulteGroup (PHM), NVR Inc (NVR), Toll Brothers (TOL)
-     For each: current share price, dividend yield, today's $ and % change, YTD % change
-  5. Any key news about these builders or the housing market
-  Return JSON:
-  {
-    "housingData": [ { "indicator": "...", "value": "...", "note": "..." } ],
-    "mnDevelopment": [ { "type": "APARTMENT|LAND|ZONING|OTHER", "description": "...", "developer": "...", "location": "..." } ],
-    "builders": [
-      { "ticker": "...", "name": "...", "price": "...", "yield": "...", "todayChg": "...", "ytd": "...", "note": "..." }
-    ],
-    "marketNote": "2-3 sentence summary of housing market conditions"
-  }`);
+  // Split into two calls to avoid token limit truncation
+  const [housing, builders] = await Promise.all([
+    callClaude(SYS, `Search for current housing market data as of ${DATESTR}:
+  1. Latest housing starts and building permits (most recent government release)
+  2. NAHB homebuilder sentiment index (latest reading)
+  3. Minnesota/Twin Cities: any new apartment projects, land transactions, or zoning news
+  4. Brief housing market summary
+  Return ONLY this JSON object:
+  {"housingData":[{"indicator":"...","value":"...","note":"..."}],"mnDevelopment":[{"type":"APARTMENT|LAND|ZONING|OTHER","description":"...","developer":"...","location":"..."}],"marketNote":"one sentence summary"}`),
+    callClaude(SYS, `Search for current stock data as of ${DATESTR} for these 5 homebuilders:
+  D.R. Horton (DHI), Lennar (LEN), PulteGroup (PHM), NVR Inc (NVR), Toll Brothers (TOL).
+  For each find: share price, dividend yield %, today change ($ and %), YTD % change.
+  Return ONLY this JSON object:
+  {"builders":[{"ticker":"...","name":"...","price":"...","yield":"...","todayChg":"...","ytd":"..."}]}`)
+  ]);
+  return { ...housing, ...builders };
 }
 
 async function fetchMN() {
